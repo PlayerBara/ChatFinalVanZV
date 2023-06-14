@@ -60,18 +60,19 @@ public class MainActivity extends AppCompatActivity {
 
         preparedServer();
 
-
         bSend.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                ip = txtIp.getText().toString();
-                user = txtUser.getText().toString();
-                if(ip == null || user == null){
+                ip = txtIp.getText().toString().trim();
+                user = txtUser.getText().toString().trim();
+                if(ip.equals("") || user.equals("")){
                     Toast.makeText(MainActivity.this, "Debe introducir una ip y un nombre de usuario antes de poder enviar un mensaje", Toast.LENGTH_SHORT).show();
                 }else{
                     dataPackageOut = new DataPackage(user, txtMsg.getText().toString());
 
                     sendMsg();
+
+                    txtMsg.setText("");
                 }
             }
         });
@@ -145,7 +146,7 @@ public class MainActivity extends AppCompatActivity {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            addMsg(new DataPackage("Tu", dataPackageOut.getMsg()));
+                            addMsg(new DataPackage("Tú", dataPackageOut.getMsg()));
                         }
                     });
 

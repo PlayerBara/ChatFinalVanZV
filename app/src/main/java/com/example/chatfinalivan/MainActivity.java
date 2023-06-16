@@ -4,7 +4,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import android.content.Intent;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.text.format.Formatter;
@@ -15,14 +14,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.chatfinalivan.modelos.DataPackage;
-import com.example.chatfinalivan.modelos.Usuario;
-
-import org.w3c.dom.Text;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.net.DatagramPacket;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -33,7 +28,7 @@ import java.util.ArrayList;
 public class MainActivity extends AppCompatActivity {
 
     TextView txtIp, txtUser, txtMsg, txtMyIp;
-    Button bSend; //192.168.14.120
+    Button bSend;
 
     private DataPackage dataPackageIn;
     private DataPackage dataPackageOut;
@@ -58,21 +53,34 @@ public class MainActivity extends AppCompatActivity {
         txtIp = (TextView) findViewById(R.id.txtIp);
         txtMyIp = (TextView) findViewById(R.id.txtMyIp);
 
+        //Prepara el servidor para recibir mensajes
         preparedServer();
 
+        //Al pulsar el boton enviar...
         bSend.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                //Guarda en un auxiliar los daots del usuario y la ip
                 ip = txtIp.getText().toString().trim();
                 user = txtUser.getText().toString().trim();
+                //Si estan vacios entonces...
                 if(ip.equals("") || user.equals("")){
+                    //... No envia nada y sale un mensaje de error
                     Toast.makeText(MainActivity.this, "Debe introducir una ip y un nombre de usuario antes de poder enviar un mensaje", Toast.LENGTH_SHORT).show();
-                }else{
-                    dataPackageOut = new DataPackage(user, txtMsg.getText().toString());
+                }else {
+                    //Comprueba de que no este vacio el mensaje
+                    if (!txtMsg.getText().toString().trim().equals("")){
+                        //Crea el objeto que se va a enviar al otro servidor
+                        dataPackageOut = new DataPackage(user, txtMsg.getText().toString());
+                        //Lo envia
+                        sendMsg();
+                        //Vacia el cuadro de mensaje
+                        txtMsg.setText("");
 
-                    sendMsg();
-
-                    txtMsg.setText("");
+                    }else{
+                        //Envia un mensaje de error al usuario
+                        Toast.makeText(MainActivity.this, "Debe introducir un mensaje", Toast.LENGTH_SHORT).show();
+                    }
                 }
             }
         });
@@ -80,33 +88,39 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void preparedServer(){
+        //Obtiene la ip del usuario para poder verla con mayor facilidad
         WifiManager wm = (WifiManager) getSystemService(WIFI_SERVICE);
         myIp = Formatter.formatIpAddress(wm.getConnectionInfo().getIpAddress());
+        //Añade la ip del usuario al testView para que sea visible
         txtMyIp.setText(myIp);
         port = 3333;
 
+        //Abre el servidor
         openServer();
     }
 
     private void openServer(){
-
+        //Auxiliar para saber si debe estar abierto el servidor
         serverIsOpen = true;
 
+        //Abre un hilo nuevo
         new Thread(new Runnable() {
             @Override
             public void run() {
                 try{
+                    //Crea el servidor
                     ServerSocket ss = new ServerSocket(port);
 
                     while(serverIsOpen){
+                        //Crea el Socket del servidor
                         Socket s = ss.accept();
-                        Log.e("Server", "Server creado");
+                        //Utilizaremos el ObjectInputStream para recibir los mensajes, que seran objetos
                         ObjectInputStream msgIn = new ObjectInputStream(s.getInputStream());
 
-                        Log.e("Server", "Buzon activo");
+                        //Los obtenemos
                         dataPackageIn = (DataPackage) msgIn.readObject();
 
-                        Log.e("Server", "Mensaje recibido");
+                        //Utilizamos el runOnUiThread para tocas cosas del diseño de la pantalla en el hilo
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
@@ -131,18 +145,21 @@ public class MainActivity extends AppCompatActivity {
         }).start();
     }
 
+    //Este hilo hace que envie los datos al servidor
     private void sendMsg(){
 
         new Thread(new Runnable() {
             @Override
             public void run() {
                 try{
+                    //Creamos el Socket y ponemos lo necesario para enviar los datos como objetos
                     Socket s = new Socket(ip, port);
 
                     ObjectOutputStream msgOut = new ObjectOutputStream(s.getOutputStream());
 
                     msgOut.writeObject(dataPackageOut);
 
+                    //Añadimos los datos que hemos enviado a nuestro recycler view para que podamos ver los mensajes que hemos enviado
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -163,6 +180,7 @@ public class MainActivity extends AppCompatActivity {
         }).start();
     }
 
+    //Este metodo guarda todos los cambios del recycler view
     private void addMsg(DataPackage dataPackage){
         listDataPackage.add(dataPackage);
 

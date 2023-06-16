@@ -2,6 +2,7 @@ package com.example.chatfinalivan.modelos;
 
 import java.io.Serializable;
 
+//Implementamos el serializable para que podamos enviar los datos como objetos
 public class DataPackage implements Serializable {
     private String usuario;
     String msg;
